@@ -22,52 +22,132 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
   final _unfocusNode = FocusNode();
 
   late Ros ros;
-  late Topic chatter;
+  late Topic x_setpoint;
+  late Topic y_setpoint;
+  late Topic set_speed;
+  late Topic set_acceleration;
+
+  int x = 0;
+  int y = 0;
+  int speed = 0;
+  int acceleration = 0;
+
+  final xController = TextEditingController();
+  final yController = TextEditingController();
+  final speedController = TextEditingController();
+  final accelerationController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
     ros = Ros(url: 'ws://127.0.0.1:9090');
     // subscribe to the topic
-    chatter = Topic(
+    x_setpoint = Topic(
         ros: ros,
-        name: '/topic',
+        name: "/base_xstepper_new_setpoint_insteps",
         type: "std_msgs/Int32",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
+
+    y_setpoint = Topic(
+        ros: ros,
+        name: "/base_ystepper_new_setpoint_insteps",
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
+    set_speed = Topic(
+        ros: ros,
+        name: "/base_stepper_set_speed_in_hz",
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
+    set_acceleration = Topic(
+        ros: ros,
+        name: "/base_stepper_set_acceleration",
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
     ros.connect();
-    Timer(const Duration(seconds: 1), () async {
-      await chatter.subscribe(subscribeHandler);
-      // await chatter.subscribe();
-    });
   }
 
   void destroyConnection() async {
-    await chatter.unsubscribe();
+    await x_setpoint.unsubscribe();
+    await y_setpoint.unsubscribe();
+    await set_speed.unsubscribe();
+    await set_acceleration.unsubscribe();
+
     await ros.close();
     setState(() {});
   }
 
-  String randomInteger = '';
-  Future<void> subscribeHandler(Map<String, dynamic> msg) async {
-    randomInteger = json.encode(msg['data']);
-    print(randomInteger);
-    setState(() {});
+  void publishCoordinate() {
+    int xSetpoint = int.tryParse(xController.text) ?? 0;
+    int ySetpoint = int.tryParse(yController.text) ?? 0;
+
+    // make xSetpoint to Int32
+
+    // Int32 xSetpointMsg = Int32(xSetpoint);
+    // Int32 ySetpointMsg = Int32(ySetpoint);
+
+    Map<String, dynamic> xSetpointMap = {
+      "data": xSetpoint.toInt(),
+    };
+
+    Map<String, dynamic> ySetpointMap = {
+      "data": ySetpoint.toInt(),
+    };
+
+    String xSetpointJson = jsonEncode(xSetpointMap);
+    String ySetpointJson = jsonEncode(ySetpointMap);
+
+    x_setpoint.publish({'data': xSetpoint.toInt()});
+    y_setpoint.publish({'data': ySetpoint.toInt()});
+  }
+
+  void setSpeedAndAcceleration() {
+    int speedSetpoint = int.tryParse(speedController.text) ?? 0;
+    int accelerationSetpoint = int.tryParse(accelerationController.text) ?? 0;
+
+    Map<String, dynamic> speedSetpointMap = {
+      'data': speedSetpoint.toInt(),
+    };
+
+    Map<String, dynamic> accelerationSetpointMap = {
+      'data': accelerationSetpoint.toInt(),
+    };
+
+    String speedSetpointJson = jsonEncode(speedSetpointMap);
+    String accelerationSetpointJson = jsonEncode(accelerationSetpointMap);
+
+    set_speed.publish({'data': speedSetpoint.toInt()});
+    set_acceleration.publish({'data': accelerationSetpoint.toInt()});
   }
 
   @override
   void dispose() {
     _unfocusNode.dispose();
+    xController.dispose();
+    yController.dispose();
+    speedController.dispose();
+    accelerationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(10, 10, 10, 10),
+    return // Generated code for this Container Widget...
+        Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(20, 0, 20, 0),
       child: Container(
-        width: 430,
+        width: 390,
         height: 350,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
@@ -92,6 +172,8 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
                   options: FFButtonOptions(
                     width: double.infinity,
                     height: 50,
+                    padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                    iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
                     color: Color(0xFF8C11BD),
                     textStyle: FlutterFlowTheme.of(context).subtitle2.override(
                           fontFamily: 'Poppins',
@@ -105,132 +187,290 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
                   ),
                 ),
               ),
-              TextFormField(
-                // controller: _model.textController1,
-                autofocus: true,
-                textCapitalization: TextCapitalization.none,
-                obscureText: false,
-                decoration: InputDecoration(
-                  labelText: 'X axis',
-                  hintText: '120 mm',
-                  hintStyle: FlutterFlowTheme.of(context).bodyText2,
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: xController,
+                      textCapitalization: TextCapitalization.none,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'X axis',
+                        hintText: '120 mm',
+                        hintStyle: FlutterFlowTheme.of(context).bodyText2,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                      ),
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                          ),
                     ),
                   ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: speedController,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'Speed',
+                        hintText: '1 cm/s',
+                        hintStyle: FlutterFlowTheme.of(context).bodyText2,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                      ),
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                          ),
                     ),
                   ),
-                  errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
-                    ),
-                  ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
-                    ),
-                  ),
-                ),
-                style: FlutterFlowTheme.of(context).bodyText1.override(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                    ),
-                // validator: _model.textController1Validator
-                // .asValidator(context),
+                ],
               ),
-              TextFormField(
-                // controller: _model.textController2,
-                autofocus: true,
-                obscureText: false,
-                decoration: InputDecoration(
-                  labelText: 'Y axis',
-                  hintText: '120 mm',
-                  hintStyle: FlutterFlowTheme.of(context).bodyText2,
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: yController,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'Y axis',
+                        hintText: '120 mm',
+                        hintStyle: FlutterFlowTheme.of(context).bodyText2,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                      ),
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                          ),
                     ),
                   ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
+                  Expanded(
+                    child: TextFormField(
+                      autofocus: true,
+                      controller: accelerationController,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        labelText: 'Acceleration',
+                        hintText: '1 cm/s2',
+                        hintStyle: FlutterFlowTheme.of(context).bodyText2,
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        errorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                        focusedErrorBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0x00000000),
+                            width: 1,
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4.0),
+                            topRight: Radius.circular(4.0),
+                          ),
+                        ),
+                      ),
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                          ),
                     ),
                   ),
-                  errorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
-                    ),
-                  ),
-                  focusedErrorBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0x00000000),
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(4.0),
-                      topRight: Radius.circular(4.0),
-                    ),
-                  ),
-                ),
-                style: FlutterFlowTheme.of(context).bodyText1.override(
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                    ),
-                // validator: _model.textController2Validator
-                // .asValidator(context),
+                ],
               ),
-              Align(
-                alignment: AlignmentDirectional(0, 0),
-                child: Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(0, 10, 0, 0),
-                  child: FFButtonWidget(
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Align(
+                    alignment: AlignmentDirectional(0, 0),
+                    child: FFButtonWidget(
+                      onPressed: () {
+                        setState(() {
+                          publishCoordinate();
+                          // print value from the text field
+                        });
+                      },
+                      text: 'Publish',
+                      options: FFButtonOptions(
+                        width: 150,
+                        height: 40,
+                        padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                        iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                        color: Color(0xFF0C994A),
+                        textStyle:
+                            FlutterFlowTheme.of(context).subtitle2.override(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.white,
+                                ),
+                        borderSide: BorderSide(
+                          color: Colors.transparent,
+                          width: 1,
+                        ),
+                        borderRadius: 8,
+                      ),
+                    ),
+                  ),
+                  FFButtonWidget(
                     onPressed: () {
-                      print('Button pressed ...');
+                      setState(() {
+                        setSpeedAndAcceleration();
+                        print(speedController.text);
+                        print(accelerationController.text);
+                      });
                     },
-                    text: 'Publish',
+                    text: 'Set',
                     options: FFButtonOptions(
-                      width: double.infinity,
+                      width: 150,
                       height: 40,
-                      color: Color(0xFF0C994A),
+                      padding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                      iconPadding: EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                      color: Color(0xFF2987E3),
                       textStyle:
                           FlutterFlowTheme.of(context).subtitle2.override(
                                 fontFamily: 'Poppins',
@@ -243,9 +483,8 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
                       borderRadius: 8,
                     ),
                   ),
-                ),
+                ],
               ),
-              // Generated code for this Row Widget...
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(0, 10, 0, 0),
                 child: Row(
@@ -259,16 +498,12 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
                             fontSize: 20,
                           ),
                     ),
-                    SizedBox(
-                      width: 50,
-                      height: 35,
-                      child: Text(
-                        randomInteger,
-                        style: FlutterFlowTheme.of(context).bodyText1.override(
-                              fontFamily: 'Poppins',
-                              fontSize: 20,
-                            ),
-                      ),
+                    Text(
+                      '30',
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 20,
+                          ),
                     ),
                     Text(
                       'Current Y :',
@@ -277,16 +512,12 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
                             fontSize: 20,
                           ),
                     ),
-                    SizedBox(
-                      width: 50,
-                      height: 35,
-                      child: Text(
-                        randomInteger,
-                        style: FlutterFlowTheme.of(context).bodyText1.override(
-                              fontFamily: 'Poppins',
-                              fontSize: 20,
-                            ),
-                      ),
+                    Text(
+                      '40',
+                      style: FlutterFlowTheme.of(context).bodyText1.override(
+                            fontFamily: 'Poppins',
+                            fontSize: 20,
+                          ),
                     ),
                   ],
                 ),
