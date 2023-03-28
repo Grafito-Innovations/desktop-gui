@@ -42,6 +42,19 @@ class _FineControlWidgetState extends State<FineControlWidget> {
   late Ros ros;
   late Topic chatter;
 
+  late Topic set_top_stepper_setpoint;
+  late Topic set_mid_stepper_setpoint;
+  late Topic set_scion_align_setpoint;
+  late Topic set_micro_servo_setpoint;
+
+//   /micro_servo_setpoint
+// /mid_stepper_encoder
+// /mid_stepper_setpoint
+// /parameter_events
+// /rosout
+// /scion_align_encoder
+// /scion_align_setpoint
+
   @override
   void initState() {
     super.initState();
@@ -54,16 +67,59 @@ class _FineControlWidgetState extends State<FineControlWidget> {
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
+
+    set_top_stepper_setpoint = Topic(
+        ros: ros,
+        name: '/top_stepper_setpoint',
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
+    set_mid_stepper_setpoint = Topic(
+        ros: ros,
+        name: '/mid_stepper_setpoint',
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
+    set_scion_align_setpoint = Topic(
+        ros: ros,
+        name: '/scion_align_setpoint',
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
+    set_micro_servo_setpoint = Topic(
+        ros: ros,
+        name: '/micro_servo_setpoint',
+        type: "std_msgs/Int32",
+        reconnectOnClose: true,
+        queueLength: 10,
+        queueSize: 10);
+
     ros.connect();
 
-    Timer(const Duration(seconds: 1), () async {
-      await chatter.subscribe(subscribeHandler);
-      // await chatter.subscribe();
+    // create timer for publishing the set point
+    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      set_top_stepper_setpoint.publish({'data': -sliderValue1.toInt()});
+      set_mid_stepper_setpoint.publish({'data': -sliderValue2.toInt()});
+      set_micro_servo_setpoint.publish({'data': -sliderValue3.toInt()});
+      set_scion_align_setpoint.publish({'data': -sliderValue4});
     });
   }
 
   void destroyConnection() async {
     await chatter.unsubscribe();
+    await ros.close();
+
+    await set_mid_stepper_setpoint.unsubscribe();
+    await set_top_stepper_setpoint.unsubscribe();
+    await set_scion_align_setpoint.unsubscribe();
+    await set_micro_servo_setpoint.unsubscribe();
+
     await ros.close();
     setState(() {});
   }
@@ -112,7 +168,7 @@ class _FineControlWidgetState extends State<FineControlWidget> {
           ),
           Container(
             width: 600,
-            height: 300,
+            height: 400,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(5),
               border: Border.all(
@@ -140,11 +196,16 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                     activeColor: FlutterFlowTheme.of(context).primaryColor,
                     inactiveColor: Color(0xFF9E9E9E),
                     min: 0,
-                    max: 10,
+                    max: 1450,
+                    divisions: 1450,
                     value: sliderValue1 ??= 0,
+                    label: sliderValue1.round().toString(),
                     onChanged: (newValue) {
-                      newValue = double.parse(newValue.toStringAsFixed(4));
-                      setState(() => sliderValue1 = newValue);
+                      newValue = double.parse(newValue.toStringAsFixed(1));
+                      setState(() {
+                        sliderValue1 = newValue;
+                        print(-sliderValue1);
+                      });
                     },
                   ),
                   Padding(
@@ -178,7 +239,7 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                       Align(
                         alignment: AlignmentDirectional(-0.9, 0),
                         child: Text(
-                          'Aligner',
+                          'Mid Stepper',
                           style:
                               FlutterFlowTheme.of(context).bodyText1.override(
                                     fontFamily: 'Poppins',
@@ -195,12 +256,96 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                                 FlutterFlowTheme.of(context).primaryColor,
                             inactiveColor: Color(0xFF9E9E9E),
                             min: 0,
-                            max: 10,
+                            max: 20000,
+                            divisions: 20000,
                             value: sliderValue2 ??= 0,
+                            label: sliderValue2.round().toString(),
                             onChanged: (newValue) {
                               newValue =
-                                  double.parse(newValue.toStringAsFixed(4));
-                              setState(() => sliderValue2 = newValue);
+                                  double.parse(newValue.toStringAsFixed(1));
+                              setState(() {
+                                sliderValue2 = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Align(
+                        alignment: AlignmentDirectional(-0.9, 0),
+                        child: Text(
+                          'Gripper Servo',
+                          style:
+                              FlutterFlowTheme.of(context).bodyText1.override(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                  ),
+                        ),
+                      ),
+                      Align(
+                        alignment: AlignmentDirectional(0, 0),
+                        child: Container(
+                          width: 390,
+                          child: Slider(
+                            activeColor:
+                                FlutterFlowTheme.of(context).primaryColor,
+                            inactiveColor: Color(0xFF9E9E9E),
+                            min: -90,
+                            max: 90,
+                            divisions: 180,
+                            value: sliderValue3 ??= 0,
+                            label: sliderValue3.round().toString(),
+                            onChanged: (newValue) {
+                              newValue =
+                                  double.parse(newValue.toStringAsFixed(1));
+                              setState(() {
+                                sliderValue3 = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Align(
+                        alignment: AlignmentDirectional(-0.9, 0),
+                        child: Text(
+                          'Scion Aligner',
+                          style:
+                              FlutterFlowTheme.of(context).bodyText1.override(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 20,
+                                  ),
+                        ),
+                      ),
+                      Align(
+                        alignment: AlignmentDirectional(0, 0),
+                        child: Container(
+                          width: 390,
+                          child: Slider(
+                            activeColor:
+                                FlutterFlowTheme.of(context).primaryColor,
+                            inactiveColor: Color(0xFF9E9E9E),
+                            min: 0,
+                            max: 4000,
+                            divisions: 4000,
+                            value: sliderValue4 ??= 0,
+                            label: sliderValue4.round().toString(),
+                            onChanged: (newValue) {
+                              newValue =
+                                  double.parse(newValue.toStringAsFixed(1));
+                              setState(() {
+                                sliderValue4 = newValue;
+                              });
                             },
                           ),
                         ),
@@ -216,10 +361,10 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                         inactiveColor: Color(0xFF9E9E9E),
                         min: 0,
                         max: 10,
-                        value: sliderValue3 ??= 0,
+                        value: sliderValue5 ??= 0,
                         onChanged: (newValue) {
                           newValue = double.parse(newValue.toStringAsFixed(4));
-                          setState(() => sliderValue3 = newValue);
+                          setState(() => sliderValue5 = newValue);
                         },
                       ),
                       Text(
@@ -231,10 +376,10 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                         inactiveColor: Color(0xFF9E9E9E),
                         min: 0,
                         max: 10,
-                        value: sliderValue4 ??= 0,
+                        value: sliderValue6 ??= 0,
                         onChanged: (newValue) {
                           newValue = double.parse(newValue.toStringAsFixed(4));
-                          setState(() => sliderValue4 = newValue);
+                          setState(() => sliderValue6 = newValue);
                         },
                       ),
                     ],

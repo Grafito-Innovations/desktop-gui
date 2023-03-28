@@ -58,7 +58,7 @@ class _EndEffectorFrontWidgetState extends State<EndEffectorFrontWidget> {
                 'Adjust Scion Height',
                 style: FlutterFlowTheme.of(context).bodyText1.override(
                       fontFamily: 'Poppins',
-                      fontSize: 20,
+                      fontSize: 10,
                     ),
               ),
             ),
@@ -68,9 +68,13 @@ class _EndEffectorFrontWidgetState extends State<EndEffectorFrontWidget> {
               min: 0,
               max: 10,
               value: sliderValue1 ??= 0,
+              label: sliderValue1.toString(),
               onChanged: (newValue) {
                 newValue = double.parse(newValue.toStringAsFixed(4));
-                setState(() => sliderValue1 = newValue);
+                setState(() {
+                  sliderValue1 = newValue;
+                  print(sliderValue1);
+                });
               },
             ),
             Padding(

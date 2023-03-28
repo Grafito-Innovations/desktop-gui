@@ -118,7 +118,6 @@ class CoarseControl extends StatelessWidget {
             ),
           ),
           EndEffectorSetupWidget(),
-
           // Generated code for this Button Widget...
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
