@@ -1,6 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'flutter_flow_theme.dart';
 import 'flutter_flow_widgets.dart';
+import 'package:roslibdart/roslibdart.dart';
+import 'dart:async';
+import 'dart:convert';
 
 class EndEffectorSetupWidget extends StatefulWidget {
   EndEffectorSetupWidget({Key? key}) : super(key: key);
@@ -13,9 +18,180 @@ class _EndEffectorSetupWidgetState extends State<EndEffectorSetupWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final _unfocusNode = FocusNode();
 
+  late Ros ros;
+
+  late Topic sy12_setpoint;
+  late Topic sy34_setpoint;
+  late Topic bg12_setpoint;
+  late Topic bg34_setpoint;
+
+  int counter_bg12 = 0;
+  int counter_bg34 = 0;
+
   @override
   void initState() {
     super.initState();
+
+    ros = Ros(url: 'ws://127.0.0.1:9090');
+
+    sy12_setpoint = Topic(
+      ros: ros,
+      name: '/sy12_setpoint',
+      type: 'std_msgs/Float32',
+      reconnectOnClose: true,
+      queueLength: 10,
+      queueSize: 1,
+      compression: 'none',
+    );
+
+    sy34_setpoint = Topic(
+      ros: ros,
+      name: '/sy34_setpoint',
+      type: 'std_msgs/Float32',
+      reconnectOnClose: true,
+      queueLength: 10,
+      queueSize: 1,
+      compression: 'none',
+    );
+
+    bg12_setpoint = Topic(
+      ros: ros,
+      name: '/bg12_setpoint',
+      type: 'std_msgs/Float32',
+      reconnectOnClose: true,
+      queueLength: 10,
+      queueSize: 1,
+      compression: 'none',
+    );
+
+    bg34_setpoint = Topic(
+      ros: ros,
+      name: '/bg34_setpoint',
+      type: 'std_msgs/Float32',
+      reconnectOnClose: true,
+      queueLength: 10,
+      queueSize: 1,
+      compression: 'none',
+    );
+
+    ros.connect();
+  }
+
+  void activateSy12() {
+    var counter = 20;
+    var counter2 = 20;
+
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        Timer.periodic(const Duration(milliseconds: 40), (timer2) {
+          sy12_setpoint.publish({'data': 0.0});
+          counter2--;
+          print(counter2);
+          if (counter2 == 0) {
+            timer2.cancel();
+            timer1.cancel();
+            counter = 1;
+            counter2 = 1;
+          }
+        });
+      } else {
+        sy12_setpoint.publish({'data': 300.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void activateSy34() {
+    var counter = 20;
+    var counter2 = 20;
+
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        Timer.periodic(const Duration(milliseconds: 40), (timer2) {
+          sy34_setpoint.publish({'data': 0.0});
+          counter2--;
+          print(counter2);
+          if (counter2 == 0) {
+            timer2.cancel();
+            timer1.cancel();
+            counter = 1;
+            counter2 = 1;
+          }
+        });
+      } else {
+        sy34_setpoint.publish({'data': 300.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void hold_bg12() {
+    int counter = 20;
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        timer1.cancel();
+        counter = 1;
+      } else {
+        bg12_setpoint.publish({'data': 260.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void release_bg12() {
+    int counter = 20;
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        timer1.cancel();
+        counter = 1;
+      } else {
+        bg12_setpoint.publish({'data': 0.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void hold_bg34() {
+    int counter = 20;
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        timer1.cancel();
+        counter = 1;
+      } else {
+        bg34_setpoint.publish({'data': 1000.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void release_bg34() {
+    int counter = 20;
+    Timer.periodic(const Duration(milliseconds: 40), (timer1) {
+      if (counter == 0) {
+        timer1.cancel();
+        counter = 1;
+      } else {
+        bg34_setpoint.publish({'data': 0.0});
+        counter--;
+        print(counter);
+      }
+    });
+  }
+
+  void destroryConnection() async {
+    await sy12_setpoint.unsubscribe();
+    await sy34_setpoint.unsubscribe();
+    await bg12_setpoint.unsubscribe();
+    await bg34_setpoint.unsubscribe();
+
+    await ros.close();
+
+    setState(() {});
   }
 
   @override
@@ -126,7 +302,16 @@ class _EndEffectorSetupWidgetState extends State<EndEffectorSetupWidget> {
             padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
             child: FFButtonWidget(
               onPressed: () {
-                print('Button pressed ...');
+                setState(() {
+                  if (counter_bg12 % 2 == 0) {
+                    hold_bg12();
+                    print("Hold");
+                  } else {
+                    release_bg12();
+                    print("Release");
+                  }
+                  counter_bg12++;
+                });
               },
               text: 'Hold Bottom of Root',
               options: FFButtonOptions(
@@ -149,7 +334,16 @@ class _EndEffectorSetupWidgetState extends State<EndEffectorSetupWidget> {
             padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
             child: FFButtonWidget(
               onPressed: () {
-                print('Button pressed ...');
+                setState(() {
+                  if (counter_bg34 % 2 == 0) {
+                    hold_bg34();
+                    print("Hold");
+                  } else {
+                    release_bg34();
+                    print("Release");
+                  }
+                  counter_bg34++;
+                });
               },
               text: 'Hold Bottom of Scion',
               options: FFButtonOptions(
@@ -172,7 +366,10 @@ class _EndEffectorSetupWidgetState extends State<EndEffectorSetupWidget> {
             padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
             child: FFButtonWidget(
               onPressed: () {
-                print('Button pressed ...');
+                print('Splice Scion Button pressed ...');
+                setState(() {
+                  activateSy12();
+                });
               },
               text: 'Splice Scion',
               options: FFButtonOptions(
@@ -195,7 +392,10 @@ class _EndEffectorSetupWidgetState extends State<EndEffectorSetupWidget> {
             padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
             child: FFButtonWidget(
               onPressed: () {
-                print('Button pressed ...');
+                print('Splice Root Stock');
+                setState(() {
+                  activateSy34();
+                });
               },
               text: 'Splice Root Stock',
               options: FFButtonOptions(

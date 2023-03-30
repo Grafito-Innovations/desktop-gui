@@ -30,15 +30,6 @@ class _FineControlWidgetState extends State<FineControlWidget> {
   bool isLimitYReached = false;
   bool isLimitZReached = false;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   // _model = createModel(context, () => FineControlModel());
-
-  //   // _model.textController1 = TextEditingController();
-  //   // _model.textController2 = TextEditingController();
-  //   // _model.textController3 = TextEditingController();
-  // }
   late Ros ros;
   late Topic chatter;
 
@@ -46,14 +37,6 @@ class _FineControlWidgetState extends State<FineControlWidget> {
   late Topic set_mid_stepper_setpoint;
   late Topic set_scion_align_setpoint;
   late Topic set_micro_servo_setpoint;
-
-//   /micro_servo_setpoint
-// /mid_stepper_encoder
-// /mid_stepper_setpoint
-// /parameter_events
-// /rosout
-// /scion_align_encoder
-// /scion_align_setpoint
 
   @override
   void initState() {
@@ -82,12 +65,12 @@ class _FineControlWidgetState extends State<FineControlWidget> {
         type: "std_msgs/Int32",
         reconnectOnClose: true,
         queueLength: 10,
-        queueSize: 10);
+        queueSize: 1);
 
     set_scion_align_setpoint = Topic(
         ros: ros,
         name: '/scion_align_setpoint',
-        type: "std_msgs/Int32",
+        type: "std_msgs/Float32",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
@@ -103,9 +86,9 @@ class _FineControlWidgetState extends State<FineControlWidget> {
     ros.connect();
 
     // create timer for publishing the set point
-    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    Timer.periodic(const Duration(milliseconds: 200), (timer) {
       set_top_stepper_setpoint.publish({'data': -sliderValue1.toInt()});
-      set_mid_stepper_setpoint.publish({'data': -sliderValue2.toInt()});
+      // set_mid_stepper_setpoint.publish({'data': -sliderValue2.toInt()});
       set_micro_servo_setpoint.publish({'data': -sliderValue3.toInt()});
       set_scion_align_setpoint.publish({'data': -sliderValue4});
     });
@@ -265,6 +248,11 @@ class _FineControlWidgetState extends State<FineControlWidget> {
                                   double.parse(newValue.toStringAsFixed(1));
                               setState(() {
                                 sliderValue2 = newValue;
+                                Timer.periodic(
+                                    const Duration(milliseconds: 200), (timer) {
+                                  set_mid_stepper_setpoint
+                                      .publish({'data': -sliderValue2.toInt()});
+                                });
                               });
                             },
                           ),

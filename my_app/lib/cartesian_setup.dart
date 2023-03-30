@@ -46,7 +46,7 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
     x_setpoint = Topic(
         ros: ros,
         name: "/base_xstepper_new_setpoint_insteps",
-        type: "std_msgs/Int32",
+        type: "std_msgs/Int64",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
@@ -54,7 +54,7 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
     y_setpoint = Topic(
         ros: ros,
         name: "/base_ystepper_new_setpoint_insteps",
-        type: "std_msgs/Int32",
+        type: "std_msgs/Int64",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
@@ -62,7 +62,7 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
     set_speed = Topic(
         ros: ros,
         name: "/base_stepper_set_speed_in_hz",
-        type: "std_msgs/Int32",
+        type: "std_msgs/Int64",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
@@ -70,7 +70,7 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
     set_acceleration = Topic(
         ros: ros,
         name: "/base_stepper_set_acceleration",
-        type: "std_msgs/Int32",
+        type: "std_msgs/Int64",
         reconnectOnClose: true,
         queueLength: 10,
         queueSize: 10);
@@ -91,11 +91,6 @@ class _CartesianoSetupWidgetState extends State<CartesianoSetupWidget> {
   void publishCoordinate() {
     int xSetpoint = int.tryParse(xController.text) ?? 0;
     int ySetpoint = int.tryParse(yController.text) ?? 0;
-
-    // make xSetpoint to Int32
-
-    // Int32 xSetpointMsg = Int32(xSetpoint);
-    // Int32 ySetpointMsg = Int32(ySetpoint);
 
     Map<String, dynamic> xSetpointMap = {
       "data": xSetpoint.toInt(),
